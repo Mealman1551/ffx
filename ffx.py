@@ -26,7 +26,8 @@ LANGS = {
 }
 
 BASE_DIR = Path.home() / ".local" / "opt" / "ffx"
-BIN_LINK = Path.home() / ".local" / "bin" / "firefox"
+BIN_DIR = Path.home() / ".local" / "bin"
+APPS_DIR = Path.home() / ".local" / "share" / "applications"
 CONFIG_DIR = Path.home() / ".config" / "ffx"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
@@ -38,7 +39,7 @@ def run(cmd):
 def load():
     if CONFIG_FILE.exists():
         return json.loads(CONFIG_FILE.read_text())
-    return {"installs": {}, "active": None}
+    return {"installs": {}}
 
 
 def save(cfg):
@@ -59,9 +60,8 @@ def choose(options):
 
         while True:
             raw = input("> ").strip()
-
             if not raw:
-                print("Please enter a number")
+                print("Enter a number")
                 continue
 
             try:
@@ -70,7 +70,7 @@ def choose(options):
                     return keys[idx - 1]
                 print("Invalid choice")
             except ValueError:
-                print("Enter a valid number")
+                print("Enter a number")
 
     except (KeyboardInterrupt, EOFError):
         print("\nCancelled")
@@ -96,46 +96,47 @@ def install(cfg):
     download(url, archive)
 
     version_id = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    install_path = BASE_DIR / version_id
+    install_path = BASE_DIR / ch
 
     install_path.mkdir(parents=True, exist_ok=True)
 
     print("Extracting...")
     run(["tar", "-xf", str(archive), "-C", str(install_path), "--strip-components=1"])
 
-    cfg["installs"][version_id] = {
-        "channel": ch,
+    bin_path = BIN_DIR / f"ffx-{ch}"
+    desktop_path = APPS_DIR / f"ffx-{ch}.desktop"
+    firefox_bin = install_path / "firefox"
+
+    BIN_DIR.mkdir(parents=True, exist_ok=True)
+    APPS_DIR.mkdir(parents=True, exist_ok=True)
+
+    if bin_path.exists() or bin_path.is_symlink():
+        bin_path.unlink()
+
+    bin_path.symlink_to(firefox_bin)
+
+    icon_path = install_path / "browser" / "chrome" / "icons" / "default" / "default128.png"
+
+    desktop_path.write_text(f"""[Desktop Entry]
+Name=Firefox {ch}
+Exec={bin_path} %u
+Icon={icon_path}
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+StartupNotify=true
+""")
+
+    cfg["installs"][ch] = {
         "lang": lang,
-        "path": str(install_path)
+        "path": str(install_path),
+        "bin": str(bin_path),
+        "desktop": str(desktop_path)
     }
 
-    cfg["active"] = version_id
-
-    activate(cfg, version_id)
     save(cfg)
 
-    print("Installed:", version_id)
-
-
-def activate(cfg, version_id):
-    if version_id not in cfg["installs"]:
-        print("Not found")
-        return
-
-    path = Path(cfg["installs"][version_id]["path"])
-    target = path / "firefox"
-
-    BIN_LINK.parent.mkdir(parents=True, exist_ok=True)
-
-    if BIN_LINK.exists() or BIN_LINK.is_symlink():
-        BIN_LINK.unlink()
-
-    BIN_LINK.symlink_to(target)
-
-    cfg["active"] = version_id
-    save(cfg)
-
-    print("Active:", version_id)
+    print("Installed:", ch)
 
 
 def list_installs(cfg):
@@ -144,59 +145,45 @@ def list_installs(cfg):
         return
 
     for k, v in cfg["installs"].items():
-        active = "*" if cfg.get("active") == k else " "
-        print(active, k, v["channel"], v["lang"])
+        print(k, "-", v["lang"])
 
 
-def remove(cfg, version_id):
-    if version_id not in cfg["installs"]:
+def remove(cfg, channel):
+    if channel not in cfg["installs"]:
         print("Not found")
         return
 
-    install = cfg["installs"][version_id]
-    path = Path(install["path"])
+    data = cfg["installs"][channel]
 
-    channel = install["channel"]
+    path = Path(data["path"])
+    bin_path = Path(data["bin"])
+    desktop_path = Path(data["desktop"])
 
     if path.exists():
         run(["rm", "-rf", str(path)])
 
-    bin_link = Path.home() / ".local" / "bin" / f"ffx-{channel}"
-    desktop = Path.home() / ".local" / "share" / "applications" / f"ffx-{channel}.desktop"
+    if bin_path.exists() or bin_path.is_symlink():
+        bin_path.unlink()
 
-    if bin_link.exists() or bin_link.is_symlink():
-        bin_link.unlink()
-
-    if desktop.exists():
-        desktop.unlink()
+    if desktop_path.exists():
+        desktop_path.unlink()
 
     try:
-        run(["update-desktop-database", str(Path.home() / ".local" / "share" / "applications")])
+        run(["update-desktop-database", str(APPS_DIR)])
     except Exception:
         pass
 
-    del cfg["installs"][version_id]
-
-    if cfg.get("active") == version_id:
-        cfg["active"] = None
-        if cfg["installs"]:
-            new_active = next(iter(cfg["installs"]))
-            activate(cfg, new_active)
-
+    del cfg["installs"][channel]
     save(cfg)
 
-    print("Removed:", version_id)
-
-def update(cfg):
-    print("Reinstalling latest release...")
-    install(cfg)
+    print("Removed:", channel)
 
 
 def main():
     cfg = load()
 
     if len(sys.argv) < 2:
-        print("ffx install | list | remove <id> | activate <id> | update")
+        print("ffx install | list | remove <channel>")
         return
 
     cmd = sys.argv[1]
@@ -210,18 +197,9 @@ def main():
 
         elif cmd == "remove":
             if len(sys.argv) < 3:
-                print("Usage: ffx remove <id>")
+                print("Usage: ffx remove <channel>")
                 return
             remove(cfg, sys.argv[2])
-
-        elif cmd == "activate":
-            if len(sys.argv) < 3:
-                print("Usage: ffx activate <id>")
-                return
-            activate(cfg, sys.argv[2])
-
-        elif cmd == "update":
-            update(cfg)
 
         else:
             print("Unknown command")
