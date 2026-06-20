@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
-import os
 import sys
 import json
-import hashlib
 import tempfile
 import urllib.request
 import subprocess
@@ -32,26 +30,52 @@ BIN_LINK = Path.home() / ".local" / "bin" / "firefox"
 CONFIG_DIR = Path.home() / ".config" / "ffx"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
+
 def run(cmd):
     subprocess.run(cmd, check=True)
+
 
 def load():
     if CONFIG_FILE.exists():
         return json.loads(CONFIG_FILE.read_text())
     return {"installs": {}, "active": None}
 
+
 def save(cfg):
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     CONFIG_FILE.write_text(json.dumps(cfg, indent=2))
 
+
 def download(url, out):
     urllib.request.urlretrieve(url, out)
 
+
 def choose(options):
-    keys = list(options.keys())
-    for i, k in enumerate(keys, 1):
-        print(f"[{i}] {k}")
-    return keys[int(input("> ")) - 1]
+    try:
+        keys = list(options.keys())
+
+        for i, k in enumerate(keys, 1):
+            print(f"[{i}] {k}")
+
+        while True:
+            raw = input("> ").strip()
+
+            if not raw:
+                print("Please enter a number")
+                continue
+
+            try:
+                idx = int(raw)
+                if 1 <= idx <= len(keys):
+                    return keys[idx - 1]
+                print("Invalid choice")
+            except ValueError:
+                print("Enter a valid number")
+
+    except (KeyboardInterrupt, EOFError):
+        print("\nCancelled")
+        sys.exit(0)
+
 
 def install(cfg):
     print("Channel:")
@@ -92,7 +116,12 @@ def install(cfg):
 
     print("Installed:", version_id)
 
+
 def activate(cfg, version_id):
+    if version_id not in cfg["installs"]:
+        print("Not found")
+        return
+
     path = Path(cfg["installs"][version_id]["path"])
     target = path / "firefox"
 
@@ -106,10 +135,18 @@ def activate(cfg, version_id):
     cfg["active"] = version_id
     save(cfg)
 
+    print("Active:", version_id)
+
+
 def list_installs(cfg):
+    if not cfg["installs"]:
+        print("No installs found")
+        return
+
     for k, v in cfg["installs"].items():
         active = "*" if cfg.get("active") == k else " "
         print(active, k, v["channel"], v["lang"])
+
 
 def remove(cfg, version_id):
     if version_id not in cfg["installs"]:
@@ -131,36 +168,52 @@ def remove(cfg, version_id):
 
     save(cfg)
 
+    print("Removed:", version_id)
+
+
 def update(cfg):
-    print("Update check (simple re-install latest release)...")
+    print("Reinstalling latest release...")
     install(cfg)
+
 
 def main():
     cfg = load()
 
     if len(sys.argv) < 2:
-        print("ffx install|list|remove|activate|update")
+        print("ffx install | list | remove <id> | activate <id> | update")
         return
 
     cmd = sys.argv[1]
 
-    if cmd == "install":
-        install(cfg)
+    try:
+        if cmd == "install":
+            install(cfg)
 
-    elif cmd == "list":
-        list_installs(cfg)
+        elif cmd == "list":
+            list_installs(cfg)
 
-    elif cmd == "remove":
-        remove(cfg, sys.argv[2])
+        elif cmd == "remove":
+            if len(sys.argv) < 3:
+                print("Usage: ffx remove <id>")
+                return
+            remove(cfg, sys.argv[2])
 
-    elif cmd == "activate":
-        activate(cfg, sys.argv[2])
+        elif cmd == "activate":
+            if len(sys.argv) < 3:
+                print("Usage: ffx activate <id>")
+                return
+            activate(cfg, sys.argv[2])
 
-    elif cmd == "update":
-        update(cfg)
+        elif cmd == "update":
+            update(cfg)
 
-    else:
-        print("Unknown command")
+        else:
+            print("Unknown command")
+
+    except KeyboardInterrupt:
+        print("\nInterrupted")
+        sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
