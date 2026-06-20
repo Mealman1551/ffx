@@ -1,6 +1,5 @@
 # ffx Firefox Tarball Manager
 
-
 ffx is a user space Firefox manager for Linux. It installs and manages multiple Firefox editions side by side using official Mozilla tarballs.
 
 Each Firefox channel is fully isolated so multiple versions can exist at the same time.
@@ -27,8 +26,9 @@ Each Firefox channel is fully isolated so multiple versions can exist at the sam
 
 install by this command:
 
-
-N/a
+```bash
+wget -qO- https://raw.githubusercontent.com/Mealman1551/ffx/master/scripts/install.sh | bash
+```
 
 You will be prompted to choose channel and language.
 
@@ -36,29 +36,27 @@ You will be prompted to choose channel and language.
 
 ### Install Firefox
 
+```bash
 ffx install
+```
 
-Interactive install with channel and language selection.
+This will list all available channels
+Use the number you want to install
 
 ### List installs
 
+```bash
 ffx list
+```
 
-Shows all installed versions and active selection.
+Shows all installed versions their "IDs", example `dev - nl`
 
-### Use version
-
-ffx use <channel>
-
-ffx use dev
-
-Switch active Firefox version.
 
 ### Remove version
 
-ffx remove <channel>
-
-ffx remove esr
+```bash
+ffx remove <channel/id>
+```
 
 Removes a Firefox installation.
 
@@ -66,26 +64,25 @@ Removes a Firefox installation.
 
 Install directory:
 
-~/.local/opt/ffx/<channel>/
+`~/.local/opt/ffx/<channel>/`
 
 Binary links:
 
-~/.local/bin/ffx-<channel>
+`~/.local/bin/ffx-<channel>`
 
 Desktop entries:
 
-~/.local/share/applications/ffx-<channel>.desktop
+`~/.local/share/applications/ffx-<channel>.desktop`
 
 Config:
 
-~/.config/ffx/config.json
+`~/.config/ffx/config.json`
 
 ## Example workflow
 
-ffx install
-ffx list
-ffx use dev
-ffx remove beta
+`ffx install`
+`ffx list`
+`ffx remove <channel>`
 
 ### Notes
 
@@ -96,10 +93,13 @@ ffx remove beta
 *   No root required
 *   Updates require reinstall
 
-### Future improvements
+--
 
-*   Automatic update checker
-*   Rollback system
-*   CLI autocomplete
-*   Config presets
-*   TUI interface
+## License
+
+This project is licensed under GPLv3
+
+--
+Made with 💚 by Mealman1551
+
+###### &copy 2026 - Mealman1551 
