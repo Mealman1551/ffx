@@ -18,6 +18,14 @@ CHANNELS = {
     "nightly": "firefox-nightly-latest"
 }
 
+DISPLAY_NAMES = {
+    "release": "Firefox",
+    "esr": "Firefox ESR",
+    "beta": "Firefox Beta",
+    "dev": "Firefox Developer Edition",
+    "nightly": "Firefox Nightly"
+}
+
 LANGS = {
     "nl": "nl",
     "en": "en-US",
@@ -60,6 +68,7 @@ def choose(options):
 
         while True:
             raw = input("> ").strip()
+
             if not raw:
                 print("Enter a number")
                 continue
@@ -95,17 +104,29 @@ def install(cfg):
     print("Downloading...")
     download(url, archive)
 
-    version_id = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     install_path = BASE_DIR / ch
+
+    if install_path.exists():
+        run(["rm", "-rf", str(install_path)])
 
     install_path.mkdir(parents=True, exist_ok=True)
 
     print("Extracting...")
     run(["tar", "-xf", str(archive), "-C", str(install_path), "--strip-components=1"])
 
-    bin_path = BIN_DIR / f"ffx-{ch}"
-    desktop_path = APPS_DIR / f"ffx-{ch}.desktop"
     firefox_bin = install_path / "firefox"
+
+    if ch == "release":
+        bin_name = "firefox"
+        desktop_name = "firefox.desktop"
+    else:
+        bin_name = f"firefox-{ch}"
+        desktop_name = f"firefox-{ch}.desktop"
+
+    display_name = DISPLAY_NAMES[ch]
+
+    bin_path = BIN_DIR / bin_name
+    desktop_path = APPS_DIR / desktop_name
 
     BIN_DIR.mkdir(parents=True, exist_ok=True)
     APPS_DIR.mkdir(parents=True, exist_ok=True)
@@ -118,7 +139,7 @@ def install(cfg):
     icon_path = install_path / "browser" / "chrome" / "icons" / "default" / "default128.png"
 
     desktop_path.write_text(f"""[Desktop Entry]
-Name=Firefox {ch}
+Name={display_name}
 Exec={bin_path} %u
 Icon={icon_path}
 Type=Application
@@ -167,6 +188,22 @@ def remove(cfg, channel):
 
     if desktop_path.exists():
         desktop_path.unlink()
+
+    legacy_bin = BIN_DIR / f"firefox-{channel}"
+    legacy_desktop = APPS_DIR / f"firefox-{channel}.desktop"
+
+    if legacy_bin.exists() or legacy_bin.is_symlink():
+        legacy_bin.unlink()
+
+    if legacy_desktop.exists():
+        legacy_desktop.unlink()
+
+    if channel == "release":
+        if (BIN_DIR / "firefox").exists():
+            (BIN_DIR / "firefox").unlink()
+
+        if (APPS_DIR / "firefox.desktop").exists():
+            (APPS_DIR / "firefox.desktop").unlink()
 
     try:
         run(["update-desktop-database", str(APPS_DIR)])
