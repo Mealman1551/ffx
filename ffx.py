@@ -153,10 +153,27 @@ def remove(cfg, version_id):
         print("Not found")
         return
 
-    path = Path(cfg["installs"][version_id]["path"])
+    install = cfg["installs"][version_id]
+    path = Path(install["path"])
+
+    channel = install["channel"]
 
     if path.exists():
         run(["rm", "-rf", str(path)])
+
+    bin_link = Path.home() / ".local" / "bin" / f"ffx-{channel}"
+    desktop = Path.home() / ".local" / "share" / "applications" / f"ffx-{channel}.desktop"
+
+    if bin_link.exists() or bin_link.is_symlink():
+        bin_link.unlink()
+
+    if desktop.exists():
+        desktop.unlink()
+
+    try:
+        run(["update-desktop-database", str(Path.home() / ".local" / "share" / "applications")])
+    except Exception:
+        pass
 
     del cfg["installs"][version_id]
 
@@ -169,7 +186,6 @@ def remove(cfg, version_id):
     save(cfg)
 
     print("Removed:", version_id)
-
 
 def update(cfg):
     print("Reinstalling latest release...")
