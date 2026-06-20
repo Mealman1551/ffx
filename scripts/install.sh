@@ -10,34 +10,15 @@ mkdir -p "$INSTALL_DIR"
 
 echo "Downloading ffx..."
 
-wget -q -O "$TARGET" "$URL"
+wget -qO "$TARGET.py" "$URL"
+
+chmod +x "$TARGET.py"
+
+cat > "$TARGET" << 'EOF'
+#!/usr/bin/env bash
+python3 "$HOME/.local/bin/ffx.py" "$@"
+EOF
 
 chmod +x "$TARGET"
 
 echo "Installed ffx to $TARGET"
-
-SHELL_RC=""
-
-if [ -n "$BASH_VERSION" ]; then
-    SHELL_RC="$HOME/.bashrc"
-elif [ -n "$ZSH_VERSION" ]; then
-    SHELL_RC="$HOME/.zshrc"
-else
-    SHELL_RC="$HOME/.profile"
-fi
-
-PATH_LINE='export PATH="$HOME/.local/bin:$PATH"'
-
-if [ -f "$SHELL_RC" ]; then
-    if ! grep -qF "$PATH_LINE" "$SHELL_RC"; then
-        echo "" >> "$SHELL_RC"
-        echo "$PATH_LINE" >> "$SHELL_RC"
-        echo "Added PATH to $SHELL_RC"
-    else
-        echo "PATH already configured"
-    fi
-fi
-
-echo ""
-echo "Done. Restart your shell or run:"
-echo "export PATH=\"$HOME/.local/bin:\$PATH\""
