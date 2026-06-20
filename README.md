@@ -30,8 +30,6 @@ install by this command:
 wget -qO- https://raw.githubusercontent.com/Mealman1551/ffx/master/scripts/install.sh | bash
 ```
 
-You will be prompted to choose channel and language.
-
 ## Commands
 
 ### Install Firefox
