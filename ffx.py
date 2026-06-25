@@ -163,6 +163,7 @@ StartupNotify=true
     save(cfg)
 
     print("Installed:", ch)
+    print("Restart your device or logout and login again to finish the installation.")
 
 
 def list_installs(cfg):
