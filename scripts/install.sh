@@ -26,7 +26,7 @@ chmod +x "$TARGET"
 if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
     echo ""
     echo "WARNING: ~/.local/bin is not in PATH"
-    echo "Add this to your shell config:"
+    echo "Add this to your shell config (.bashrc):"
     echo 'export PATH="$HOME/.local/bin:$PATH"'
 fi
 
