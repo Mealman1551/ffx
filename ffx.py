@@ -148,6 +148,11 @@ MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme
 StartupNotify=true
 """)
 
+    try:
+        run(["update-desktop-database", str(APPS_DIR)])
+    except Exception:
+        pass
+
     cfg["installs"][ch] = {
         "lang": lang,
         "path": str(install_path),
