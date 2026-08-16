@@ -1,6 +1,6 @@
 # ffx Firefox Tarball Manager
 
-ffx is a user space Firefox manager for Linux. It installs and manages multiple Firefox editions side by side using official Mozilla tarballs.
+ffx is a cli Firefox manager for Linux. It installs and manages multiple Firefox editions side by side using official Mozilla tarballs.
 
 Each Firefox channel is fully isolated so multiple versions can exist at the same time.
 
@@ -12,7 +12,7 @@ Each Firefox channel is fully isolated so multiple versions can exist at the sam
 *   Per channel desktop entries
 *   Switch versions without reinstalling
 *   Clean uninstall support
-*   Works on Debian, Fedora, Arch
+*   Works on Debian, Fedora, Arch and more
 
 ## Supported channels
 
@@ -89,7 +89,6 @@ Config:
 *   No overwriting between installs
 *   Switching does not reinstall Firefox
 *   No root required
-*   Updates require reinstall
 
 --
 
